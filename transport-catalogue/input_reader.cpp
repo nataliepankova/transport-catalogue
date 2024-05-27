@@ -106,8 +106,7 @@ void transport_commands::InputReader::ParseLine(std::string_view line) {
 void transport_commands::InputReader::ApplyCommands([[maybe_unused]] transport_catalogue::TransportCatalogue& catalogue) const {
     if (commands_.count(transport_commands::Type::STOP) != 0) {
         for (const auto& command : commands_.at(transport_commands::Type::STOP)) {
-            catalogue.AddStop(command.id, transport_commands::detail::ParseCoordinates(command.description).lat,
-                transport_commands::detail::ParseCoordinates(command.description).lng);
+            catalogue.AddStop(command.id, transport_commands::detail::ParseCoordinates(command.description));
         }
     }
     if (commands_.count(transport_commands::Type::BUS) != 0) {

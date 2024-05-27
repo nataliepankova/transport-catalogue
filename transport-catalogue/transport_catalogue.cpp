@@ -7,8 +7,8 @@
 using namespace transport_catalogue;
 
 
-void TransportCatalogue::AddStop(const std::string& stop_name, const double lat, const double lng) {
-    Stop stop{ stop_name, lat, lng};
+void TransportCatalogue::AddStop(const std::string& stop_name, Coordinates coordinates) {
+    Stop stop{ stop_name, coordinates};
     stops_.emplace_back(stop);
     stop_name_to_data_.insert({ stops_.back().name, &stops_.back() });
     // добавляем остановку в индекс
@@ -48,13 +48,13 @@ BusInfo TransportCatalogue::GetBusInfo(const std::string_view bus_name) const {
     double distance = 0.0;
     std::unordered_set<Stop*> unique_stops;
     for (int i = 0; i < bus_info->route.size() - 1; ++i) {
-        distance += ComputeDistance({ bus_info->route[i]->latitude, bus_info->route[i]->longitude }, { bus_info->route[i + 1]->latitude, bus_info->route[i + 1]->longitude });
+        distance += ComputeDistance({ bus_info->route[i]->coordinates.lat, bus_info->route[i]->coordinates.lng }, { bus_info->route[i + 1]->coordinates.lat, bus_info->route[i + 1]->coordinates.lng });
         unique_stops.emplace(bus_info->route[i]);
     }
     return { bus_info->route.size(), unique_stops.size(), distance };
 }
 
-std::set<Bus*, TransportCatalogue::bus_set_cmp> TransportCatalogue::GetStopInfo(const std::string_view stop_name) const {
+std::set<Bus*, TransportCatalogue::BusSetCmp> TransportCatalogue::GetStopInfo(const std::string_view stop_name) const {
     Stop* stop_ptr = FindStop(stop_name);
     assert(stop_ptr != nullptr);
     return stop_name_to_buses_.at(stop_ptr);
