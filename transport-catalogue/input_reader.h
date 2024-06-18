@@ -46,6 +46,7 @@ namespace transport_commands {
 
     namespace detail {
         Coordinates ParseCoordinates(std::string_view str);
+        std::vector<transport_catalogue::DistanceToStop> ParseStopDistance(std::string_view str);
         std::string_view Trim(std::string_view string);
         std::vector<std::string_view> Split(std::string_view string, char delim);
         std::vector<std::string_view> ParseRoute(std::string_view route);

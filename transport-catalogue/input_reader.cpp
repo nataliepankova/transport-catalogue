@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cassert>
 #include <iterator>
+#include <regex>
 
 /**
     * Парсит строку вида "10.123,  -30.1837" и возвращает пару координат (широта, долгота)
@@ -94,6 +95,24 @@ transport_commands::Description transport_commands::detail::ParseDescription(std
             std::string(line.substr(not_space, colon_pos - not_space)),
             std::string(line.substr(colon_pos + 1)) };
 }
+
+std::vector<transport_catalogue::DistanceToStop> transport_commands::detail::ParseStopDistance(std::string_view str) {
+
+    std::regex distance_pattern(R"((\d+)m to ([^,]+))");
+    std::vector<transport_catalogue::DistanceToStop> result;
+
+    std::string line = std::string(str);
+
+    auto begin = std::sregex_iterator(line.begin(), line.end(), distance_pattern);
+
+    for (; begin != std::sregex_iterator(); ++begin) {
+        auto match = *begin;
+        result.push_back({ match[2].str(), std::stoi(match[0].str()) });
+
+    }
+    return result;
+}
+
 void transport_commands::InputReader::ParseLine(std::string_view line) {
     using namespace std;
     auto command_description = transport_commands::detail::ParseDescription(line);
@@ -107,6 +126,9 @@ void transport_commands::InputReader::ApplyCommands([[maybe_unused]] transport_c
     if (commands_.count(transport_commands::Type::STOP) != 0) {
         for (const auto& command : commands_.at(transport_commands::Type::STOP)) {
             catalogue.AddStop(command.id, transport_commands::detail::ParseCoordinates(command.description));
+        }
+        for (const auto& command : commands_.at(transport_commands::Type::STOP)) {
+            catalogue.SetStopDistances(command.id, std::move(transport_commands::detail::ParseStopDistance(command.description)));
         }
     }
     if (commands_.count(transport_commands::Type::BUS) != 0) {

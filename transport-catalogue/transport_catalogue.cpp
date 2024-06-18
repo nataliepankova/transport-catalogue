@@ -8,11 +8,26 @@ using namespace transport_catalogue;
 
 
 void TransportCatalogue::AddStop(const std::string& stop_name, Coordinates coordinates) {
-    Stop stop{ stop_name, coordinates};
+    Stop stop{ stop_name, coordinates };
     stops_.emplace_back(stop);
     stop_name_to_data_.insert({ stops_.back().name, &stops_.back() });
     // добавляем остановку в индекс
     stop_name_to_buses_.insert({ &stops_.back(), {} });
+}
+
+void TransportCatalogue::SetStopDistances(const std::string_view stop_name, std::vector<DistanceToStop>&& distances) {
+    for (const auto& dst : distances) {
+        std::pair<const Stop*, const Stop*> stop_pair(stop_name_to_data_[stop_name], stop_name_to_data_[dst.stop]);
+        stop_pairs_to_distance_.insert({ stop_pair, dst.distance });
+    }
+}
+
+int TransportCatalogue::GetStopsDistance(const Stop* from_stop, const Stop* to_stop) const {
+    return stop_pairs_to_distance_.count({ from_stop, to_stop }) != 0 ?
+        stop_pairs_to_distance_.at({ from_stop, to_stop })
+        : stop_pairs_to_distance_.count({ to_stop, from_stop }) != 0
+        ? stop_pairs_to_distance_.at({ to_stop, from_stop })
+        : 0;
 }
 
 void TransportCatalogue::AddBus(const std::string& bus_name, const std::vector<std::string_view>& stops) {
@@ -45,13 +60,16 @@ Stop* TransportCatalogue::FindStop(const std::string_view stop_name) const {
 BusInfo TransportCatalogue::GetBusInfo(const std::string_view bus_name) const {
     Bus* bus_info = FindBus(bus_name);
     assert(bus_info != nullptr);
-    double distance = 0.0;
+    double geo_distance = 0.0;
+    int route_length = 0;
     std::unordered_set<Stop*> unique_stops;
     for (int i = 0; i < bus_info->route.size() - 1; ++i) {
-        distance += ComputeDistance({ bus_info->route[i]->coordinates.lat, bus_info->route[i]->coordinates.lng }, { bus_info->route[i + 1]->coordinates.lat, bus_info->route[i + 1]->coordinates.lng });
+        geo_distance += ComputeDistance({ bus_info->route[i]->coordinates.lat, bus_info->route[i]->coordinates.lng }, { bus_info->route[i + 1]->coordinates.lat, bus_info->route[i + 1]->coordinates.lng });
+        route_length += GetStopsDistance(bus_info->route[i], bus_info->route[i + 1]);
         unique_stops.emplace(bus_info->route[i]);
     }
-    return { bus_info->route.size(), unique_stops.size(), distance };
+    double curvature = route_length / geo_distance;
+    return { bus_info->route.size(), unique_stops.size(), route_length, curvature };
 }
 
 std::set<Bus*, TransportCatalogue::BusSetCmp> TransportCatalogue::GetStopInfo(const std::string_view stop_name) const {

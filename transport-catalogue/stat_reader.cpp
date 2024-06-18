@@ -17,7 +17,8 @@ void transport_stat::detail::PrintBusInfo(const TransportCatalogue& tansport_cat
     output << command << " "s << bus_descr << ": "s <<
         bus_stat.all_stops_count << " stops on route, "s <<
         bus_stat.unique_stops_count << " unique stops, "s <<
-        setprecision(6) << bus_stat.route_length << " route length\n"s;
+        bus_stat.route_length << " route length, "s <<
+        setprecision(6) << bus_stat.curvature << " curvature\n";
 }
 
 void transport_stat::detail::PrintStopInfo(const TransportCatalogue& tansport_catalogue, std::string_view stop_descr, std::string_view command, std::ostream& output) {

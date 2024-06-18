@@ -14,7 +14,13 @@ namespace transport_catalogue {
 	struct BusInfo {
 		size_t all_stops_count;
 		size_t unique_stops_count;
-		double route_length;
+		int route_length;
+		double curvature;
+	};
+
+	struct DistanceToStop{
+		std::string stop;
+		int distance;
 	};
 
 	struct Stop {
@@ -27,10 +33,27 @@ namespace transport_catalogue {
 		std::vector<Stop*> route;
 	};
 
+	class StopPairHasher {
+	public:
+		size_t operator() (std::pair<const Stop*, const Stop*> stops_pair) const {
+			size_t hash_first = hasher_(stops_pair.first);
+			size_t hash_second = hasher_(stops_pair.second);
+			return (hash_first + hash_second) * 37;
+		}
+		bool operator ==(std::pair<const Stop*, const Stop*> other) {
+			return *this == other;
+		}
+
+	private:
+		std::hash<const Stop*> hasher_;
+	};
+
 	class TransportCatalogue {
 
 	public:
 		void AddStop(const std::string& stop_name, Coordinates coordinates);
+		void SetStopDistances(const std::string_view stop_name, std::vector<DistanceToStop>&& distances);
+		int GetStopsDistance(const Stop* from_stop, const Stop* to_stop) const;
 		void AddBus(const std::string& bus_name, const std::vector<std::string_view>& stops);
 		Stop* FindStop(const std::string_view stop_name) const;
 		Bus* FindBus(const std::string_view bus_name) const;
@@ -46,6 +69,7 @@ namespace transport_catalogue {
 		std::deque<Stop> stops_;
 		std::unordered_map<std::string_view, Stop*> stop_name_to_data_;
 		std::unordered_map<Stop*, std::set<Bus*, BusSetCmp>> stop_name_to_buses_;
+		std::unordered_map<std::pair<const Stop*, const Stop*>, int, StopPairHasher> stop_pairs_to_distance_;
 		std::deque<Bus> buses_;
 		std::unordered_map<std::string_view, Bus*> bus_name_to_data_;
 	};
