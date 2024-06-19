@@ -128,7 +128,9 @@ void transport_commands::InputReader::ApplyCommands([[maybe_unused]] transport_c
             catalogue.AddStop(command.id, transport_commands::detail::ParseCoordinates(command.description));
         }
         for (const auto& command : commands_.at(transport_commands::Type::STOP)) {
-            catalogue.SetStopDistances(command.id, std::move(transport_commands::detail::ParseStopDistance(command.description)));
+            for (const auto& dst : transport_commands::detail::ParseStopDistance(command.description)) {
+                catalogue.SetStopsDistance(command.id, dst.stop_name, dst.distance);
+            }
         }
     }
     if (commands_.count(transport_commands::Type::BUS) != 0) {

@@ -19,7 +19,7 @@ namespace transport_catalogue {
 	};
 
 	struct DistanceToStop{
-		std::string stop;
+		std::string stop_name;
 		int distance;
 	};
 
@@ -52,7 +52,7 @@ namespace transport_catalogue {
 
 	public:
 		void AddStop(const std::string& stop_name, Coordinates coordinates);
-		void SetStopDistances(const std::string_view stop_name, std::vector<DistanceToStop>&& distances);
+		void SetStopsDistance(const std::string_view from_stop_name, const std::string_view to_stop_name, int distance);
 		int GetStopsDistance(const Stop* from_stop, const Stop* to_stop) const;
 		void AddBus(const std::string& bus_name, const std::vector<std::string_view>& stops);
 		Stop* FindStop(const std::string_view stop_name) const;

@@ -15,11 +15,10 @@ void TransportCatalogue::AddStop(const std::string& stop_name, Coordinates coord
     stop_name_to_buses_.insert({ &stops_.back(), {} });
 }
 
-void TransportCatalogue::SetStopDistances(const std::string_view stop_name, std::vector<DistanceToStop>&& distances) {
-    for (const auto& dst : distances) {
-        std::pair<const Stop*, const Stop*> stop_pair(stop_name_to_data_[stop_name], stop_name_to_data_[dst.stop]);
-        stop_pairs_to_distance_.insert({ stop_pair, dst.distance });
-    }
+void TransportCatalogue::SetStopsDistance(const std::string_view from_stop_name, const std::string_view to_stop_name, int distance) {
+    std::pair<const Stop*, const Stop*> stop_pair(stop_name_to_data_[from_stop_name], stop_name_to_data_[to_stop_name]);
+    stop_pairs_to_distance_.insert({ stop_pair, distance });
+
 }
 
 int TransportCatalogue::GetStopsDistance(const Stop* from_stop, const Stop* to_stop) const {
