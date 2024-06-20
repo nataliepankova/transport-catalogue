@@ -123,18 +123,20 @@ void transport_commands::InputReader::ParseLine(std::string_view line) {
 }
 
 void transport_commands::InputReader::ApplyCommands([[maybe_unused]] transport_catalogue::TransportCatalogue& catalogue) const {
-    if (commands_.count(transport_commands::Type::STOP) != 0) {
-        for (const auto& command : commands_.at(transport_commands::Type::STOP)) {
+    auto stop_commands_it = commands_.find(transport_commands::Type::STOP);
+    if (stop_commands_it != commands_.end()) {
+        for (const auto& command : stop_commands_it->second) {
             catalogue.AddStop(command.id, transport_commands::detail::ParseCoordinates(command.description));
         }
-        for (const auto& command : commands_.at(transport_commands::Type::STOP)) {
+        for (const auto& command : stop_commands_it->second) {
             for (const auto& dst : transport_commands::detail::ParseStopDistance(command.description)) {
                 catalogue.SetStopsDistance(command.id, dst.stop_name, dst.distance);
             }
         }
     }
-    if (commands_.count(transport_commands::Type::BUS) != 0) {
-        for (auto& command : commands_.at(transport_commands::Type::BUS)) {
+    auto bus_commands_it = commands_.find(transport_commands::Type::BUS);
+    if (bus_commands_it != commands_.end()) {
+        for (auto& command : bus_commands_it->second) {
             catalogue.AddBus(command.id, transport_commands::detail::ParseRoute(command.description));
         }
     }
