@@ -244,96 +244,69 @@ namespace json {
     }  // namespace
 
     // ============ Constructors ============
-    Node::Node(std::nullptr_t value)
-        : value_(value) {
-    }
-
-    Node::Node(Array array)
-        : value_(move(array)) {
-    }
-
-    Node::Node(Dict map)
-        : value_(move(map)) {
-    }
-
-    Node::Node(int value)
-        : value_(value) {
-    }
-
-    Node::Node(double value)
-        : value_(value) {
-    }
-
-    Node::Node(bool value)
-        : value_(value) {
-    }
-
-    Node::Node(string value)
-        : value_(move(value)) {
-    }
 
     // ========== bool methods ===========
 
     bool Node::IsInt() const {
-        return holds_alternative<int>(value_);
+        return holds_alternative<int>(*this);
     }
     bool Node::IsDouble() const {
         return IsInt() || IsPureDouble();
     }
     bool Node::IsPureDouble() const {
-        return holds_alternative<double>(value_);
+        return holds_alternative<double>(*this);
     }
     bool Node::IsBool() const {
-        return holds_alternative<bool>(value_);
+        return holds_alternative<bool>(*this);
     }
     bool Node::IsString() const {
-        return holds_alternative<string>(value_);
+        return holds_alternative<string>(*this);
     }
     bool Node::IsNull() const {
-        return holds_alternative<nullptr_t>(value_);
+        return holds_alternative<nullptr_t>(*this);
     }
     bool Node::IsArray() const {
-        return holds_alternative<Array>(value_);
+        return holds_alternative<Array>(*this);
     }
     bool Node::IsMap() const {
-        return holds_alternative<Dict>(value_);
+        return holds_alternative<Dict>(*this);
     }
 
     // ========== get value methods ============
 
     const Array& Node::AsArray() const {
         if (IsArray()) {
-            return get<Array>(value_);
+            return get<Array>(*this);
         }
         throw std::logic_error("invalid type");
     }
     const Dict& Node::AsMap() const {
         if (IsMap()) {
-            return get<Dict>(value_);
+            return get<Dict>(*this);
         }
         throw std::logic_error("invalid type");
     }
     int Node::AsInt() const {
         if (IsInt()) {
-            return get<int>(value_);
+            return get<int>(*this);
         }
         throw std::logic_error("invalid type");
     }
     const std::string& Node::AsString() const {
         if (IsString()) {
-            return get<string>(value_);
+            return get<string>(*this);
         }
         throw std::logic_error("invalid type");
     }
     bool Node::AsBool() const {
         if (IsBool()) {
-            return get<bool>(value_);
+            return get<bool>(*this);
         }
         throw std::logic_error("invalid type");
     }
     double Node::AsDouble() const {
         if (IsDouble()) {
-            return IsPureDouble() ? get<double>(value_) : static_cast<double>(get<int>(value_));
+            return IsPureDouble() ? get<double>(*this) : static_cast<double>(get<int>(*this));
         }
         throw std::logic_error("invalid type");
     }
@@ -476,7 +449,6 @@ namespace json {
 
         PrintNode(doc.GetRoot(), PrintContext{ output });
 
-        // ?????????? ??????? ??????????????
     }
     //========== comparison operators ==============
     bool operator==(const Node& left, const Node& right) {
