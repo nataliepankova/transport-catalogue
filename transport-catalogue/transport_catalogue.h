@@ -7,7 +7,7 @@
 #include <set>
 #include <vector>
 
-#include "geo.h"
+#include "domain.h"
 
 namespace transport_catalogue {
 
@@ -16,21 +16,6 @@ namespace transport_catalogue {
 		size_t unique_stops_count;
 		int route_length;
 		double curvature;
-	};
-
-	struct DistanceToStop{
-		std::string stop_name;
-		int distance;
-	};
-
-	struct Stop {
-		std::string name;
-		Coordinates coordinates;
-	};
-
-	struct Bus {
-		std::string name;
-		std::vector<Stop*> route;
 	};
 
 	class StopPairHasher {
@@ -51,24 +36,21 @@ namespace transport_catalogue {
 	class TransportCatalogue {
 
 	public:
-		void AddStop(const std::string& stop_name, Coordinates coordinates);
-		void SetStopsDistance(const std::string_view from_stop_name, const std::string_view to_stop_name, int distance);
+		void AddStop(const std::string& stop_name, geo::Coordinates coordinates);
+		void SetStopDistances(const std::string_view from_stop_name, const std::string_view to_stop_name, int distance);
 		int GetStopsDistance(const Stop* from_stop, const Stop* to_stop) const;
-		void AddBus(const std::string& bus_name, const std::vector<std::string_view>& stops);
+		void AddBus(const std::string& bus_name, const std::vector<std::string_view>& stops, bool is_roundtrip);
 		Stop* FindStop(const std::string_view stop_name) const;
 		Bus* FindBus(const std::string_view bus_name) const;
 		BusInfo GetBusInfo(const std::string_view bus_name) const;
-		struct BusSetCmp {
-			bool operator() (Bus* rhs, Bus* lhs) const {
-				return rhs->name < lhs->name;
-			}
-		};
-		std::set<Bus*, BusSetCmp> GetStopInfo(const std::string_view stop_name) const;
+		std::set<const Bus*, BusSetCmp> GetStopInfo(const std::string_view stop_name) const;
+
+		std::set<const Bus*, BusSetCmp> GetBuses() const;
 
 	private:
 		std::deque<Stop> stops_;
 		std::unordered_map<std::string_view, Stop*> stop_name_to_data_;
-		std::unordered_map<Stop*, std::set<Bus*, BusSetCmp>> stop_name_to_buses_;
+		std::unordered_map<Stop*, std::set<const Bus*, BusSetCmp>> stop_name_to_buses_;
 		std::unordered_map<std::pair<const Stop*, const Stop*>, int, StopPairHasher> stop_pairs_to_distance_;
 		std::deque<Bus> buses_;
 		std::unordered_map<std::string_view, Bus*> bus_name_to_data_;
