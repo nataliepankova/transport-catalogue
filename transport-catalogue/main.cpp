@@ -12,8 +12,6 @@ using namespace transport_catalogue;
 int main() {
     TransportCatalogue catalogue;
 
-    //ifstream read_file;
-    //read_file.open("input.txt");
     JsonReader json_reader{ cin };
     MapRenderer renderer;
     json_reader.ApplyCommands(catalogue, renderer);
