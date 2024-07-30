@@ -1,4 +1,4 @@
-﻿#include "map_renderer.h"
+#include "map_renderer.h"
 #include "request_handler.h"
 
 using namespace svg;
@@ -92,51 +92,115 @@ SphereProjector MapRenderer::ProjectStops(std::set<const Bus*, BusSetCmp>& buses
 	};
 }
 
+std::vector<MapRenderer::StopPoint> MapRenderer::PrepareStopPointsForRoute(const std::vector<Stop*> bus_route, const SphereProjector proj) const {
+	std::vector<StopPoint> result;
+	for (const Stop* stop : bus_route) {
+		result.emplace_back(StopPoint{ stop->name, proj(geo::Coordinates{ stop->coordinates.lat, stop->coordinates.lng }) });
+	}
+	return result;
+}
 
-void MapRenderer::RenderMap(std::set<const Bus*, BusSetCmp>& buses, std::ostream& out) const {
-	Document map;
-	size_t color_palette_index = 0;
-	// спроецируем все остановки на плоскость и подготовим масштаб карты
-	const SphereProjector proj = ProjectStops(buses);
-	// контейнеры для элементов карты
+std::set<MapRenderer::StopPoint, MapRenderer::StopPointCmp> MapRenderer::PrepareSortedUniqueStopPoints(std::set<const Bus*, BusSetCmp>& buses, const SphereProjector proj) const {
+	std::set<StopPoint, StopPointCmp> result;
+	for (const Bus* bus : buses) {
+		if (!bus->route.empty()) {
+			// запишем плоскостные точки маршрута
+			std::vector<StopPoint> stops_points = PrepareStopPointsForRoute(bus->route, proj);
+
+			// запишем уникальные остановки в отсортированном виде
+			for (const auto& stop_point : stops_points) {
+				result.emplace(StopPoint{ stop_point });
+			}
+		}
+	}
+	return result;
+}
+
+Color MapRenderer::GetRouteColor(size_t bus_index) const {
+	size_t color_palette_index = bus_index < color_palette_.size() ? bus_index : bus_index % color_palette_.size();
+	return color_palette_[color_palette_index];
+}
+
+std::vector<Polyline> MapRenderer::RenderBusRoutes(std::set<const Bus*, BusSetCmp>& buses, const SphereProjector proj) const {
+	size_t bus_index = 0;
 	std::vector<Polyline> bus_routes;
-	std::vector<Text> bus_text;
-
-	std::set<StopPoint, StopPointCmp> unique_stops;
 
 	for (const Bus* bus : buses) {
 		if (!bus->route.empty()) {
 			// запишем плоскостные точки маршрута
-			std::vector<StopPoint> stops_points;
-			for (const Stop* stop : bus->route) {
-				stops_points.emplace_back(StopPoint{ stop->name, proj(geo::Coordinates{ stop->coordinates.lat, stop->coordinates.lng }) });
-			}
-			
-			// определим цвет маршрута и обновим индекс палитры
-			Color route_color = color_palette_[color_palette_index];
-			color_palette_index = color_palette_index == color_palette_.size() - 1 ? 0 : color_palette_index + 1;
-			
-			bus_routes.emplace_back(RenderRoute(stops_points, route_color));
+			std::vector<StopPoint> stops_points = PrepareStopPointsForRoute(bus->route, proj);
 
-			// добавляем названия автобусов
-			bus_text.emplace_back(RenderBusNameUnderlayer(stops_points[0].point, bus->name));
-			bus_text.emplace_back(RenderBusNameText(stops_points[0].point, bus->name, route_color));
-			if (!bus->is_roundtrip) {
-				Point second_end_stop_point = stops_points[stops_points.size()/2].point;
-				if (second_end_stop_point != stops_points[0].point) {
-					bus_text.emplace_back(RenderBusNameUnderlayer(second_end_stop_point, bus->name));
-					bus_text.emplace_back(RenderBusNameText(second_end_stop_point, bus->name, route_color));
-				}
-			}
-			
-			// запишем уникальные остановки в отсортированном виде
-			for (const auto& stop_point : stops_points) {
-				unique_stops.emplace(StopPoint{ stop_point });
-			}
+			// определим цвет маршрута и обновим индекс палитры
+			Color route_color = GetRouteColor(bus_index);
+
+			bus_routes.emplace_back(RenderRoute(stops_points, route_color));
+			++bus_index;
 		}
 	}
+	return bus_routes;
 
-	// добавляем маршруты на карту
+}
+
+std::vector<Text> MapRenderer::RenderBusCaptions(std::set<const Bus*, BusSetCmp>& buses, const SphereProjector proj) const {
+	std::vector<Text> bus_captions;
+	size_t bus_index = 0;
+	for (const Bus* bus : buses) {
+		if (!bus->route.empty()) {
+			// запишем плоскостные точки маршрута
+			std::vector<StopPoint> stops_points = PrepareStopPointsForRoute(bus->route, proj);
+
+			// определим цвет маршрута и обновим индекс палитры
+			Color route_color = GetRouteColor(bus_index);
+
+			// добавляем названия автобусов
+			bus_captions.emplace_back(RenderBusNameUnderlayer(stops_points[0].point, bus->name));
+			bus_captions.emplace_back(RenderBusNameText(stops_points[0].point, bus->name, route_color));
+			if (!bus->is_roundtrip) {
+				Point second_end_stop_point = stops_points[stops_points.size() / 2].point;
+				if (second_end_stop_point != stops_points[0].point) {
+					bus_captions.emplace_back(RenderBusNameUnderlayer(second_end_stop_point, bus->name));
+					bus_captions.emplace_back(RenderBusNameText(second_end_stop_point, bus->name, route_color));
+				}
+			}
+			++bus_index;
+		}
+	}
+	return bus_captions;
+}
+
+std::vector<Circle> MapRenderer::RenderStopCircles(std::set<const Bus*, BusSetCmp>& buses, const SphereProjector proj) const {
+	std::vector<Circle> result;
+	std::set<StopPoint, StopPointCmp> unique_stops = PrepareSortedUniqueStopPoints(buses, proj);
+	// добавляем кружки остановок
+	for (const auto& stop : unique_stops) {
+		result.emplace_back(RenderStop(stop.point));
+	}
+	return result;
+}
+
+std::vector<Text> MapRenderer::RenderStopCaptions(std::set<const Bus*, BusSetCmp>& buses, const SphereProjector proj) const {
+	std::vector<Text> result;
+	std::set<StopPoint, StopPointCmp> unique_stops = PrepareSortedUniqueStopPoints(buses, proj);
+	// добавляем надписи для остановок
+	for (const auto& stop : unique_stops) {
+		result.emplace_back(RenderStopNameUnderlayer(stop));
+		result.emplace_back(RenderStopNameText(stop));
+	}
+	return result;
+}
+
+
+void MapRenderer::RenderMap(std::set<const Bus*, BusSetCmp>& buses, std::ostream& out) const {
+	Document map;
+	// спроецируем все остановки на плоскость и подготовим масштаб карты
+	const SphereProjector proj = ProjectStops(buses);
+	// контейнеры для элементов карты
+	std::vector<Polyline> bus_routes = RenderBusRoutes(buses, proj);
+	std::vector<Text> bus_text = RenderBusCaptions(buses, proj);
+	std::vector<Circle> stops = RenderStopCircles(buses, proj);
+	std::vector<Text> stop_text = RenderStopCaptions(buses, proj);
+
+	// добавляем элементы на карту
 	for (const Polyline& route : bus_routes) {
 		map.Add(route);
 	}
@@ -146,15 +210,14 @@ void MapRenderer::RenderMap(std::set<const Bus*, BusSetCmp>& buses, std::ostream
 	}
 
 	// добавляем кружки остановок
-	for (const auto& stop : unique_stops) {
-		map.Add(RenderStop(stop.point));
+	for (const Circle& stop : stops) {
+		map.Add(stop);
 	}
 
 	// добавляем надписи для остановок
-	for (const auto& stop : unique_stops) {
-		map.Add(RenderStopNameUnderlayer(stop));
-		map.Add(RenderStopNameText(stop));
+	for (const Text& elem : stop_text) {
+		map.Add(elem);
 	}
-	
+
 	map.Render(out);
 }

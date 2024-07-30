@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "domain.h"
 #include "geo.h"
@@ -112,13 +112,20 @@ namespace renderer {
         };
     private:
         SphereProjector ProjectStops(std::set<const Bus*, BusSetCmp>& buses) const;
+        std::vector<StopPoint> PrepareStopPointsForRoute(const std::vector<Stop*> bus_route, const SphereProjector proj) const;
+        std::set<StopPoint, StopPointCmp> PrepareSortedUniqueStopPoints(std::set<const Bus*, BusSetCmp>& buses, const SphereProjector proj) const;
+        svg::Color GetRouteColor(size_t bus_index) const;
         svg::Polyline RenderRoute(std::vector<StopPoint> stops_points, svg::Color route_color) const;
+        std::vector<svg::Polyline> RenderBusRoutes(std::set<const Bus*, BusSetCmp>& buses, const SphereProjector proj) const;
+        std::vector<svg::Text> RenderBusCaptions(std::set<const Bus*, BusSetCmp>& buses, const SphereProjector proj) const;
         svg::Text RenderCommonBusTextProps(const svg::Point& point, std::string bus_name) const;
         svg::Text RenderBusNameUnderlayer(const svg::Point& point, std::string bus_name) const;
         svg::Text RenderBusNameText(const svg::Point& point, std::string bus_name, svg::Color route_color) const;
         svg::Circle RenderStop(const svg::Point& point) const;
+        std::vector<svg::Circle> RenderStopCircles(std::set<const Bus*, BusSetCmp>& buses, const SphereProjector proj) const;
         svg::Text RenderCommonStopTextProps(const StopPoint& stop) const;
         svg::Text RenderStopNameUnderlayer(const StopPoint& stop) const;
         svg::Text RenderStopNameText(const StopPoint& stop) const;
+        std::vector<svg::Text> RenderStopCaptions(std::set<const Bus*, BusSetCmp>& buses, const SphereProjector proj) const;
     };
 }

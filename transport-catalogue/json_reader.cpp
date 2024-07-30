@@ -16,7 +16,7 @@ std::vector<DistanceToStop> detail::ParseDistanceToStop(const Node& stop_info) {
 
 std::vector<std::string_view> detail::ParseRoute(const Node& route, bool is_roundtrip) {
 	std::vector<std::string_view> stops;
-	
+
 	stops.reserve(route.AsArray().size());
 	for (const auto& elem : route.AsArray()) {
 		stops.emplace_back(elem.AsString());
@@ -30,13 +30,16 @@ std::vector<std::string_view> detail::ParseRoute(const Node& route, bool is_roun
 	return results;
 }
 
-void JsonReader::ApplyBaseRequests(const Array& request_array, transport_catalogue::TransportCatalogue& catalogue) const {
+void JsonReader::AddStopsToCatalogue(const Array& request_array, transport_catalogue::TransportCatalogue& catalogue) const {
 	for (const Node& request_node : request_array) {
 		Dict request = request_node.AsMap();
 		if (request.at("type"s).AsString() == "Stop"s) {
 			catalogue.AddStop(request.at("name"s).AsString(), { request.at("latitude"s).AsDouble(),  request.at("longitude"s).AsDouble() });
 		}
 	}
+}
+
+void JsonReader::SetStopDistancesInCatalogue(const Array& request_array, transport_catalogue::TransportCatalogue& catalogue) const {
 	for (const Node& request_node : request_array) {
 		Dict request = request_node.AsMap();
 		if (request.at("type"s).AsString() == "Stop"s) {
@@ -45,6 +48,9 @@ void JsonReader::ApplyBaseRequests(const Array& request_array, transport_catalog
 			}
 		}
 	}
+}
+
+void JsonReader::AddBusesToCatalogue(const Array& request_array, transport_catalogue::TransportCatalogue& catalogue) const {
 	for (const Node& request_node : request_array) {
 		Dict request = request_node.AsMap();
 		if (request.at("type"s).AsString() == "Bus"s) {
@@ -52,7 +58,12 @@ void JsonReader::ApplyBaseRequests(const Array& request_array, transport_catalog
 			catalogue.AddBus(request.at("name"s).AsString(), detail::ParseRoute(request.at("stops"s), is_roundtrip), is_roundtrip);
 		}
 	}
-	
+}
+
+void JsonReader::ApplyBaseRequests(const Array& request_array, transport_catalogue::TransportCatalogue& catalogue) const {
+	AddStopsToCatalogue(request_array, catalogue);
+	SetStopDistancesInCatalogue(request_array, catalogue);
+	AddBusesToCatalogue(request_array, catalogue);
 }
 
 Node JsonReader::PrepareBusStat(const Dict& request, transport_catalogue::TransportCatalogue& catalogue) const {
@@ -143,6 +154,18 @@ void JsonReader::ApplyCommands(transport_catalogue::TransportCatalogue& catalogu
 	}
 }
 
+svg::Color JsonReader::CreateColorFromArray(const Array& shades, renderer::MapRenderer& renderer) const {
+	if (shades.size() == 3) {
+		return renderer.CreateRgbColor(shades[0].AsInt(), shades[1].AsInt(), shades[2].AsInt());
+	}
+	else if (shades.size() == 4) {
+		return renderer.CreateRgbaColor(shades[0].AsInt(), shades[1].AsInt(), shades[2].AsInt(), shades[3].AsDouble());
+	}
+	else {
+		return svg::NoneColor;
+	}
+}
+
 void JsonReader::ApplyRenderSettings(const Dict& render_settings, renderer::MapRenderer& renderer) const {
 	renderer.width_ = render_settings.at("width"s).AsDouble();
 	renderer.height_ = render_settings.at("height"s).AsDouble();
@@ -157,13 +180,7 @@ void JsonReader::ApplyRenderSettings(const Dict& render_settings, renderer::MapR
 		renderer.underlayer_color_ = render_settings.at("underlayer_color"s).AsString();
 	}
 	else if (render_settings.at("underlayer_color"s).IsArray()) {
-		Array shades = render_settings.at("underlayer_color"s).AsArray();
-		if (shades.size() == 3) {
-			renderer.underlayer_color_ = renderer.CreateRgbColor(shades[0].AsInt(), shades[1].AsInt(), shades[2].AsInt());
-		}
-		else if (shades.size() == 4) {
-			renderer.underlayer_color_ = renderer.CreateRgbaColor(shades[0].AsInt(), shades[1].AsInt(), shades[2].AsInt(), shades[3].AsDouble());
-		}
+		renderer.underlayer_color_ = CreateColorFromArray(render_settings.at("underlayer_color"s).AsArray(), renderer);
 	}
 	renderer.underlayer_width_ = render_settings.at("underlayer_width"s).AsDouble();
 	for (const Node& color : render_settings.at("color_palette"s).AsArray()) {
@@ -171,13 +188,7 @@ void JsonReader::ApplyRenderSettings(const Dict& render_settings, renderer::MapR
 			renderer.color_palette_.push_back(color.AsString());
 		}
 		else if (color.IsArray()) {
-			Array shades = color.AsArray();
-			if (shades.size() == 3) {
-				renderer.color_palette_.push_back(renderer.CreateRgbColor(shades[0].AsInt(), shades[1].AsInt(), shades[2].AsInt()));
-			}
-			else if (shades.size() == 4) {
-				renderer.color_palette_.push_back(renderer.CreateRgbaColor(shades[0].AsInt(), shades[1].AsInt(), shades[2].AsInt(), shades[3].AsDouble()));
-			}
+			renderer.color_palette_.push_back(CreateColorFromArray(color.AsArray(), renderer));
 		}
 	}
 }
