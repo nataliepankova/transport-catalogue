@@ -1,4 +1,5 @@
 #include "json_reader.h"
+#include "json_builder.h"
 
 #include <sstream>
 
@@ -67,73 +68,76 @@ void JsonReader::ApplyBaseRequests(const Array& request_array, transport_catalog
 }
 
 Node JsonReader::PrepareBusStat(const Dict& request, transport_catalogue::TransportCatalogue& catalogue) const {
+	json::Builder bus_stat{};
+	bus_stat.StartDict().Key("request_id"s).Value(request.at("id"s).AsInt());
 	std::string bus_name = request.at("name"s).AsString();
-	Dict bus_stat{ {"request_id", request.at("id"s).AsInt()} };
 	if (catalogue.FindBus(bus_name) == nullptr) {
 
-		bus_stat["error_message"] = Node("not found"s);
+		bus_stat.Key("error_message"s).Value("not found"s);
 	}
 	else {
 		auto bus_info = catalogue.GetBusInfo(bus_name);
-		bus_stat["curvature"] = Node(bus_info.curvature);
-		bus_stat["route_length"] = Node(bus_info.route_length);
-		bus_stat["stop_count"] = Node(static_cast<int>(bus_info.all_stops_count));
-		bus_stat["unique_stop_count"] = Node(static_cast<int>(bus_info.unique_stops_count));
+		bus_stat.Key("curvature"s).Value(bus_info.curvature)
+				.Key("route_length"s).Value(bus_info.route_length)
+				.Key("stop_count"s).Value(static_cast<int>(bus_info.all_stops_count))
+				.Key("unique_stop_count"s).Value(static_cast<int>(bus_info.unique_stops_count));
 	}
 
-	return Node(bus_stat);
+	return bus_stat.EndDict().Build();
 
 }
 
 Node JsonReader::PrepareStopStat(const Dict& request, transport_catalogue::TransportCatalogue& catalogue) const {
+	json::Builder stop_stat{};
+	stop_stat.StartDict().Key("request_id"s).Value(request.at("id"s).AsInt());
 	std::string stop_name = request.at("name"s).AsString();
-	Dict stop_stat{ {"request_id", request.at("id"s).AsInt()} };
 	if (catalogue.FindStop(stop_name) == nullptr) {
-
-		stop_stat["error_message"] = Node("not found"s);
+		stop_stat.Key("error_message"s).Value("not found"s);
 	}
 	else {
 		auto stop_info = catalogue.GetStopInfo(stop_name);
 		if (stop_info.empty()) {
-			stop_stat["buses"] = Node(Array{});
+			stop_stat.Key("buses"s).StartArray().EndArray();
 		}
 		else {
-			Array buses;
-			buses.reserve(stop_info.size());
+			stop_stat.Key("buses"s).StartArray();
 			for (const auto& bus : stop_info) {
-				buses.emplace_back(bus->name);
+				stop_stat.Value(bus->name);
 			}
-			stop_stat["buses"] = Node(buses);
+			stop_stat.EndArray();
 		}
 
 	}
 
-	return Node(stop_stat);
+	return stop_stat.EndDict().Build();
 }
 
 Node JsonReader::PrepareMap(const Dict& request, std::set<const Bus*, BusSetCmp>& buses, renderer::MapRenderer& renderer) const {
 	std::ostringstream out;
 	renderer.RenderMap(buses, out);
-	Dict map_data{ {"request_id", request.at("id"s).AsInt()}, {"map", out.str()} };
-	return Node(map_data);
+	json::Builder map_data{};
+	return map_data.StartDict().Key("request_id"s).Value(request.at("id"s).AsInt())
+		.Key("map"s).Value(out.str())
+		.EndDict().Build();
 }
 
 void JsonReader::ApplyStatRequests(const Array& request_array, transport_catalogue::TransportCatalogue& catalogue, renderer::MapRenderer& renderer) const {
-	Array result;
+	json::Builder result{};
+	result.StartArray();
 	for (const Node& request_node : request_array) {
 		Dict request = request_node.AsMap();
 		if (request.at("type"s).AsString() == "Bus"s) {
-			result.emplace_back(PrepareBusStat(request, catalogue));
+			result.Value(PrepareBusStat(request, catalogue).AsMap());
 		}
 		if (request.at("type"s).AsString() == "Stop"s) {
-			result.emplace_back(PrepareStopStat(request, catalogue));
+			result.Value(PrepareStopStat(request, catalogue).AsMap());
 		}
 		if (request.at("type"s).AsString() == "Map"s) {
 			auto buses = catalogue.GetBuses();
-			result.emplace_back(PrepareMap(request, buses, renderer));
+			result.Value(PrepareMap(request, buses, renderer).AsMap());
 		}
 	}
-	Print(Document{ Node{result} }, std::cout);
+	Print(Document{ result.EndArray().Build()}, std::cout);
 }
 
 void JsonReader::ApplyCommands(transport_catalogue::TransportCatalogue& catalogue, renderer::MapRenderer& renderer) const {

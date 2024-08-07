@@ -22,8 +22,15 @@ namespace json {
     public:
 
         using variant::variant;
+        using Value = variant;
 
-        const variant& GetValue() const { return *this; }
+        Node(Value value) : variant(std::move(value)) {}
+
+        const Value& GetValue() const { return *this; }
+
+        Value& GetValue() {
+            return *this;
+        }
 
         bool IsInt() const;
         bool IsDouble() const;
