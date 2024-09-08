@@ -1,4 +1,4 @@
-#include "map_renderer.h"
+﻿#include "map_renderer.h"
 #include "request_handler.h"
 
 using namespace svg;
@@ -218,6 +218,6 @@ void MapRenderer::RenderMap(std::set<const Bus*, BusSetCmp>& buses, std::ostream
 	for (const Text& elem : stop_text) {
 		map.Add(elem);
 	}
-
+	
 	map.Render(out);
 }

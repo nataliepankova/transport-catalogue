@@ -46,6 +46,7 @@ namespace transport_catalogue {
 		std::set<const Bus*, BusSetCmp> GetStopInfo(const std::string_view stop_name) const;
 
 		std::set<const Bus*, BusSetCmp> GetBuses() const;
+		std::deque<Stop> GetStops() const;
 
 	private:
 		std::deque<Stop> stops_;

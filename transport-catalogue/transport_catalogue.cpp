@@ -85,3 +85,7 @@ std::set<const Bus*, BusSetCmp> TransportCatalogue::GetBuses() const {
     }
     return result;
 }
+
+std::deque<Stop> TransportCatalogue::GetStops() const {
+    return stops_; 
+}
