@@ -17,7 +17,7 @@ int main() {
     json_reader.ApplyBaseRequests(catalogue);
     MapRenderer renderer;
     json_reader.ApplyRenderSettings(renderer);
-    optional<TranspRouteParams> params = json_reader.GetRoutingSettings();
+    TranspRouteParams params = json_reader.GetRoutingSettings();
     TransportRouter router{ catalogue, params };
 
     json_reader.ApplyStatRequests(catalogue, renderer, router);

@@ -18,19 +18,15 @@ namespace transport_router {
 		double bus_velocity = 40;
 	};
 
-	struct StopPairVertex {
-		size_t stop_wait_id;
-		size_t stop_go_id;
-	};
-
-	struct RouteItemInfo {
-		EdgeType type;
-		std::string name;
-		std::optional<int> span_count;
-		double time;
-	};
-
 	struct TranspRouteInfo {
+
+		struct RouteItemInfo {
+			EdgeType type;
+			std::string name;
+			std::optional<int> span_count;
+			double time;
+		};
+
 		double total_time = 0.0;
 		std::vector<RouteItemInfo> items;
 	};
@@ -50,6 +46,11 @@ namespace transport_router {
 		Graph graph_;
 		std::unique_ptr<Router> router_;
 		TranspRouteParams params_;
+
+		struct StopPairVertex {
+			size_t stop_wait_id;
+			size_t stop_go_id;
+		};
 		std::unordered_map<std::string, StopPairVertex> stops_to_vertex_ids_;
 
 

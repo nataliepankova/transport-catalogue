@@ -61,10 +61,10 @@ std::optional<TranspRouteInfo> TransportRouter::MakeRoute(std::string_view stop_
 		const Edge<double>& curr_edge_data = graph_.GetEdge(edge);
 		// if we get no bus name - push wait item
 		if (curr_edge_data.type == EdgeType::WAIT) {
-			result.items.emplace_back(RouteItemInfo{ EdgeType::WAIT, curr_edge_data.entity_name, 0, static_cast<double>(params_.bus_wait_time) });
+			result.items.emplace_back(TranspRouteInfo::RouteItemInfo{ EdgeType::WAIT, curr_edge_data.entity_name, 0, static_cast<double>(params_.bus_wait_time) });
 
 		} else if (curr_edge_data.type == EdgeType::BUS) {
-			result.items.emplace_back(RouteItemInfo{ EdgeType::BUS, curr_edge_data.entity_name, curr_edge_data.span_count, curr_edge_data.weight });
+			result.items.emplace_back(TranspRouteInfo::RouteItemInfo{ EdgeType::BUS, curr_edge_data.entity_name, curr_edge_data.span_count, curr_edge_data.weight });
 
 		}
 	}
