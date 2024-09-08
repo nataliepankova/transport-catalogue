@@ -14,7 +14,7 @@ namespace json_reader {
 		JsonReader(std::istream& input)
 			: json_doc_(Load(input)) {}
 
-		std::optional<transport_router::TranspRouteParams> GetRoutingSettings() const;
+		transport_router::TranspRouteParams GetRoutingSettings() const;
 		void ApplyBaseRequests(transport_catalogue::TransportCatalogue& catalogue) const;
 		void ApplyRenderSettings(renderer::MapRenderer& renderer) const;
 		void ApplyStatRequests(transport_catalogue::TransportCatalogue& catalogue, renderer::MapRenderer& renderer, transport_router::TransportRouter& router) const;
@@ -26,7 +26,7 @@ namespace json_reader {
 		void AddBusesToCatalogue(const Array& request_array, transport_catalogue::TransportCatalogue& catalogue) const;
 		svg::Color CreateColorFromArray(const Array& shades, renderer::MapRenderer& renderer) const;
 		Node PrepareBusStat(const Dict& request, transport_catalogue::TransportCatalogue& catalogue) const;
-		Node PrepareStopStat(const Dict& request, transport_catalogue::TransportCatalogue& catalogue) const; 
+		Node PrepareStopStat(const Dict& request, transport_catalogue::TransportCatalogue& catalogue) const;
 		Node PrepareMap(const Dict& request, std::set<const Bus*, BusSetCmp>& buses, renderer::MapRenderer& renderer) const;
 		Node PrepareRouteStat(const Dict& request, transport_router::TransportRouter& router) const;
 	};

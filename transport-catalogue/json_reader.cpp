@@ -17,7 +17,7 @@ std::vector<DistanceToStop> detail::ParseDistanceToStop(const Node& stop_info) {
 
 std::vector<std::string_view> detail::ParseRoute(const Node& route, bool is_roundtrip) {
 	std::vector<std::string_view> stops;
-	
+
 	stops.reserve(route.AsArray().size());
 	for (const auto& elem : route.AsArray()) {
 		stops.emplace_back(elem.AsString());
@@ -127,8 +127,8 @@ Node JsonReader::PrepareMap(const Dict& request, std::set<const Bus*, BusSetCmp>
 }
 
 Node JsonReader::PrepareRouteStat(const Dict& request, transport_router::TransportRouter& router) const {
-	std::string stop_from = request.at("from"s).AsString();
-	std::string stop_to = request.at("to"s).AsString();
+	std::string_view stop_from = request.at("from"s).AsString();
+	std::string_view stop_to = request.at("to"s).AsString();
 	std::optional<transport_router::TranspRouteInfo> route_info = router.MakeRoute(stop_from, stop_to);
 	json::Builder route_json{};
 	route_json.StartDict().Key("request_id"s).Value(request.at("id"s).AsInt());
@@ -232,12 +232,14 @@ void JsonReader::ApplyRenderSettings(renderer::MapRenderer& renderer) const {
 	}
 }
 
-std::optional<transport_router::TranspRouteParams> JsonReader::GetRoutingSettings() const {
+transport_router::TranspRouteParams JsonReader::GetRoutingSettings() const {
 	Dict requests = json_doc_.GetRoot().AsMap();
+	transport_router::TranspRouteParams params;
 	if (!requests.count("routing_settings"s)) {
-		return std::nullopt;
+		return params;
 	}
 	Dict routing_settings = requests.at("routing_settings"s).AsMap();
-	std::optional<transport_router::TranspRouteParams>params{ transport_router::TranspRouteParams{routing_settings.at("bus_wait_time"s).AsInt(), routing_settings.at("bus_velocity"s).AsDouble()} };
+	params.bus_wait_time = routing_settings.at("bus_wait_time"s).AsInt();
+	params.bus_velocity = routing_settings.at("bus_velocity"s).AsDouble();
 	return params;
 }
